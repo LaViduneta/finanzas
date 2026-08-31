@@ -1,0 +1,54 @@
+/select></div>
+          <div class="field"><label>¿Es recurrente?</label><select id="recurring"><option value="no">No</option><option value="si">Sí</option></select><div class="hint">Útil para alquiler, internet, gimnasio, suscripciones, etc.</div></div>
+          <div class="field full"><label>Nota opcional</label><textarea id="note" rows="3" placeholder="Cualquier detalle que quieras recordar"></textarea></div>
+          <div class="form-actions"><button type="reset" class="btn secondary">Limpiar</button><button type="submit" class="btn primary">Aceptar y guardar</button></div>
+        </form>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div class="section-title"><div><h2>Asistente de carga rápida</h2><p>Escribí algo como “Gasté 35 mil en Carrefour con Visa”.</p></div></div>
+        <div class="chat">
+          <div class="messages" id="chatMessages"><div class="bubble ai">Contame un gasto en una frase y te ayudo a interpretarlo.</div></div>
+          <div class="chatbar"><input id="chatInput" placeholder="Ej: gasté 18.500 en nafta con débito"><button id="chatSend" class="btn primary">Enviar</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="como" class="view">
+      <div class="section-title"><div><h2>Cómo usar</h2><p>La idea es que registrar un gasto te lleve pocos segundos.</p></div></div>
+      <div class="howto">
+        <div class="step"><div class="num">1</div><b>Cargá cada gasto</b><p>Entrá a “Agregar gasto” y completá monto, moneda, descripción, fecha y medio de pago. Si dejás Categoría en “Automática”, la página intentará reconocerla sola.</p></div>
+        <div class="step"><div class="num">2</div><b>Usá descripciones claras</b><p>Es mejor escribir “Carrefour supermercado”, “EDES luz” o “Shell nafta” que algo genérico como “compra”. Eso mejora la clasificación automática.</p></div>
+        <div class="step"><div class="num">3</div><b>Revisá Home</b><p>Home resume cuánto gastaste en pesos y dólares, cuáles son tus categorías principales y cómo se distribuye el gasto del mes.</p></div>
+        <div class="step"><div class="num">4</div><b>Compará meses</b><p>En Finanzas, hacé clic sobre cualquier movimiento. Se abrirá un gráfico tipo glassmorphism comparando esa categoría contra el mes anterior.</p></div>
+        <div class="step"><div class="num">5</div><b>Usá el asistente</b><p>Podés escribir una frase como “gasté 40 mil en comida con Amex”. El asistente completa el formulario para que solo revises y guardes.</p></div>
+        <div class="step"><div class="num">6</div><b>Qué información necesita</b><p>Como mínimo: monto, moneda, descripción y fecha. Medio de pago y categoría hacen que los informes sean mucho más útiles. Una nota es opcional.</p></div>
+        <div class="step"><div class="num">7</div><b>Sincronización privada</b><p>Cuando el servidor y Supabase estén configurados, iniciá sesión con Google. Tus gastos se guardarán en tu cuenta y se sincronizarán entre PC y celular. Si todavía no configuraste el servidor, la página mantiene un modo local de prueba.</p></div>
+        <div class="step"><div class="num">8</div><b>Conectá tus correos</b><p>En Configuración podés vincular por separado el Gmail del banco, el de servicios y el de suscripciones. Al sincronizar, las facturas detectadas quedan pendientes de confirmación antes de convertirse en gastos.</p></div>
+        <div class="step"><div class="num">9</div><b>IA real, más adelante</b><p>La IA queda preparada como una futura función premium. Las claves de API nunca deben colocarse en el HTML: se configurarán únicamente en el servidor cuando decidas activarla.</p></div>
+      </div>
+    </section>
+
+    <section id="config" class="view">
+      <div class="section-title"><div><h2>Configuración</h2><p>Cuenta, sincronización y fuentes automáticas.</p></div></div>
+      <div id="setupBanner" class="setup-banner">La aplicación está funcionando en modo local. Para activar login, sincronización y Gmail, completá las variables del servidor indicadas en <b>README.md</b>.</div>
+
+      <div class="settings-grid">
+        <div class="card">
+          <div class="section-title"><div><h2>Cuenta</h2><p>Tu acceso privado a Mis Finanzas.</p></div></div>
+          <div class="connection-card"><div class="connection-info"><strong id="settingsUser">Modo local</strong><span id="settingsUserSub">Sin cuenta conectada</span></div><button class="btn primary" id="loginLogoutBtn">Iniciar con Google</button></div>
+        </div>
+        <div class="card">
+          <div class="section-title"><div><h2>Base de datos</h2><p>Sincronización entre dispositivos.</p></div></div>
+          <div class="connection-card"><div class="connection-info"><strong>Supabase</strong><span id="dbStatusText">No configurado</span></div><span class="status pending" id="dbStatus">Pendiente</span></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div class="section-title"><div><h2>Correos conectados</h2><p>Podés usar tres Gmail distintos. No hace falta mover todo a una misma cuenta.</p></div><button class="btn secondary" id="syncMailBtn">Sincronizar ahora</button></div>
+        <div class="settings-grid">
+          <div class="connection-card"><div class="connection-info"><strong>🏦 Banco</strong><span id="mailBankText">Sin conectar</span></div><button class="btn secondary small gmail-connect" data-source="bank">Conectar Gmail</button></div>
+          <div class="connection-card"><div class="connection-info"><strong>🏠 Servicios</strong><span id="mailServicesText">Sin conectar</span></div><button class="btn secondary small gmail-connect" data-source="services">Conectar Gmail</button></div>
+          <div class="connection-card"><div class="connection-info"><strong>📺 Suscripciones</strong><span id="mailSubscriptionsText">Sin conectar</span></div><button class="btn secondary small gmail-connect" data-source="subscriptions">Conectar Gmail</button></div>
+        </div>
+        <div cla
