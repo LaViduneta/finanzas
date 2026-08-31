@@ -1,0 +1,46 @@
+
+const APP={configured:false,supabase:null,user:null,session:null,mode:'local'};
+async function initBackend(){
+  try{
+    const r=await fetch('/api/config',{cache:'no-store'}); if(!r.ok) throw new Error('config');
+    const cfg=await r.json();
+    if(!cfg.supabaseUrl||!cfg.supabaseAnonKey) throw new Error('missing');
+    APP.configured=true; APP.supabase=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseAnonKey);
+    const {data:{session}}=await APP.supabase.auth.getSession(); APP.session=session; APP.user=session?.user||null;
+    APP.supabase.auth.onAuthStateChange((_e,session)=>{APP.session=session;APP.user=session?.user||null;updateAccountUI();if(APP.user){APP.mode='cloud';loadCloudExpenses();loadGmailStatus();loadCandidates();}});
+    updateAccountUI();
+    if(APP.user){APP.mode='cloud';await loadCloudExpenses();await loadGmailStatus();await loadCandidates();}
+    else if(localStorage.getItem('mfContinueLocal')!=='1') document.getElementById('loginScreen').classList.add('open');
+  }catch(e){APP.configured=false;updateAccountUI();document.getElementById('setupBanner')?.classList.add('show');}
+}
+async function googleLogin(){
+  if(!APP.configured){alert('Primero configurá Supabase y el servidor. Revisá README.md.');return;}
+  await APP.supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin}});
+}
+async function logout(){if(APP.supabase&&APP.user)await APP.supabase.auth.signOut();APP.mode='local';APP.user=null;APP.session=null;updateAccountUI();}
+function updateAccountUI(){
+  const email=APP.user?.email||'Modo local', cloud=APP.configured&&APP.user;
+  document.getElementById('accountEmail').textContent=email;document.getElementById('accountMeta').textContent=cloud?'Sincronización privada activa':(APP.configured?'Iniciá sesión para sincronizar':'Los datos quedan en este navegador');
+  document.getElementById('accountDot').classList.toggle('on',!!cloud);
+  document.getElementById('settingsUser').textContent=email;document.getElementById('settingsUserSub').textContent=cloud?'Cuenta Google conectada':'Sin cuenta conectada';
+  const b=document.getElementById('loginLogoutBtn');b.textContent=cloud?'Cerrar sesión':'Iniciar con Google';
+  document.getElementById('dbStatusText').textContent=APP.configured?'Servidor listo'+(cloud?' · sincronizando':' · falta iniciar sesión'):'No configurado';
+  const st=document.getElementById('dbStatus');st.textContent=cloud?'Conectado':(APP.configured?'Listo':'Pendiente');st.className='status '+(cloud?'connected':'pending');
+  document.getElementById('setupBanner')?.classList.toggle('show',!APP.configured);
+}
+async function authHeaders(){return APP.session?.access_token?{'Authorization':'Bearer '+APP.session.access_token,'Content-Type':'application/json'}:{'Content-Type':'application/json'};}
+async function loadCloudExpenses(){
+  if(!APP.user)return; const {data,error}=await APP.supabase.from('expenses').select('*').order('date',{ascending:false}); if(error){console.warn(error);return;}
+  if(data){expenses=data.map(x=>({id:x.id,amount:Number(x.amount),currency:x.currency,description:x.description,date:x.date,payment:x.payment,category:x.category,recurring:x.recurring?'si':'no',note:x.note||''}));renderAll();}
+}
+async function cloudInsertExpense(e){
+  const row={user_id:APP.user.id,amount:e.amount,currency:e.currency,description:e.description,date:e.date,payment:e.payment,category:e.category,recurring:e.recurring==='si',note:e.note||''};
+  const {data,error}=await APP.supabase.from('expenses').insert(row).select().single(); if(error)throw error; return data;
+}
+async function cloudDeleteExpense(id){const {error}=await APP.supabase.from('expenses').delete().eq('id',id);if(error)throw error;}
+async function startGmailConnect(source){
+  if(!APP.user){alert('Primero iniciá sesión con Google.');return;} const r=await fetch('/api/gmail/connect',{method:'POST',headers:await authHeaders(),body:JSON.stringify({source})});const j=await r.json();if(!r.ok){alert(j.error||'No se pudo iniciar la conexión');return;}location.href=j.url;
+}
+async function loadGmailStatus(){if(!APP.user)return;try{const r=await fetch('/api/gmail/status',{headers:await authHeaders()});const j=await r.json();if(!r.ok)return;for(const src of ['bank','services','subscriptions']){const x=j.connections?.find(c=>c.source===src);const id='mail'+(src==='bank'?'Bank':src==='services'?'Services':'Subscriptions')+'Text';document.getElementById(id).textContent=x?`${x.email} · conectado`:'Sin conectar';const btn=document.querySelector(`.gmail-connect[data-source="${src}"]`);btn.textContent=x?'Reconectar':'Conectar Gmail';}}catch(e){console.warn(e)}}
+async function syncGmail(){if(!APP.user){alert('Primero iniciá sesión.');return;}const b=document.getElementById('syncMailBtn');b.disabled=true;b.textContent='Sincronizando…';try{const r=await fetch('/api/gmail/sync',{method:'POST',headers:await authHeaders()});const j=await r.json();if(!r.ok)throw new Error(j.error||'Error');await loadCandidates();alert(`Sincronización terminada. ${j.detected||0} posibles gastos detectados.`);}catch(e){alert(e.message)}finally{b.disabled=false;b.textContent='Sincronizar ahora'}}
+async function loadCandidates(){if(!APP.user)return;const {data,error}=await APP.supabase.from('invoice_candidates').select('*').eq('status','pending').order('detected_at',{ascending:false});if(error)return;const el=document.getElementById('receiptList');el.innerHTML=(data||[]).map(c=>`<div class="receipt"><div><strong>${esc(c.merchant||c.subject||'Factura')}</strong><small>${esc(c.source)} · ${esc(c.sender||'')}</small></div><div><span class="pill">${esc(c.category||'Otros')}</span></div><div class="amount">${money(Number(c.amount||0),c.currency||'ARS')}</div><div class="mini-actions"><button class="btn primary small" onclick="acceptCandidate('${c.id}')">Agregar</button><button class="btn secondary small" onclick="ignoreCandidate('${c.id}')">Ignorar</button></div></div>`).join('')||'<div class="empty">Todavía no hay factur
