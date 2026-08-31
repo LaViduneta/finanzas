@@ -1,0 +1,47 @@
+as detectadas.</div>';}
+async function acceptCandidate(id){const {data:c,error}=await APP.supabase.from('invoice_candidates').select('*').eq('id',id).single();if(error)return alert('No se pudo abrir.');const e={amount:Number(c.amount),currency:c.currency||'ARS',description:c.merchant||c.subject||'Factura',date:c.expense_date||new Date().toISOString().slice(0,10),payment:'Otro',category:c.category||'Otros',recurring:'si',note:'Importado desde Gmail'};try{const d=await cloudInsertExpense(e);await APP.supabase.from('invoice_candidates').update({status:'accepted'}).eq('id',id);await loadCloudExpenses();await loadCandidates();}catch(err){alert('No se pudo agregar el gasto.')}}
+async function ignoreCandidate(id){await APP.supabase.from('invoice_candidates').update({status:'ignored'}).eq('id',id);await loadCandidates();}
+const CATS=['Servicios','Comida','Transporte','Compras','Salud','Entretenimiento','Vivienda','Suscripciones','Otros'];
+const demo=[
+ {id:1,amount:78430,currency:'ARS',description:'EDES luz',date:'2026-08-02',payment:'Débito',category:'Servicios',recurring:'si',note:''},
+ {id:2,amount:31210,currency:'ARS',description:'Camuzzi gas',date:'2026-08-03',payment:'Débito',category:'Servicios',recurring:'si',note:''},
+ {id:3,amount:54220,currency:'ARS',description:'Carrefour supermercado',date:'2026-08-04',payment:'Visa',category:'Comida',recurring:'no',note:''},
+ {id:4,amount:38500,currency:'ARS',description:'Shell nafta',date:'2026-08-06',payment:'Amex',category:'Transporte',recurring:'no',note:''},
+ {id:5,amount:18,currency:'USD',description:'Netflix',date:'2026-08-07',payment:'Visa',category:'Suscripciones',recurring:'si',note:''},
+ {id:6,amount:611000,currency:'ARS',description:'Alquiler',date:'2026-08-08',payment:'Transferencia',category:'Vivienda',recurring:'si',note:''},
+ {id:7,amount:132000,currency:'ARS',description:'Supermercado',date:'2026-07-11',payment:'Visa',category:'Comida',recurring:'no',note:''},
+ {id:8,amount:69000,currency:'ARS',description:'EDES luz',date:'2026-07-02',payment:'Débito',category:'Servicios',recurring:'si',note:''},
+ {id:9,amount:510000,currency:'ARS',description:'Alquiler',date:'2026-07-08',payment:'Transferencia',category:'Vivienda',recurring:'si',note:''},
+ {id:10,amount:32000,currency:'ARS',description:'YPF combustible',date:'2026-07-17',payment:'Visa',category:'Transporte',recurring:'no',note:''},
+ {id:11,amount:15,currency:'USD',description:'Spotify y apps',date:'2026-07-09',payment:'Visa',category:'Suscripciones',recurring:'si',note:''}
+];
+let expenses=JSON.parse(localStorage.getItem('misFinanzasExpenses')||'null')||demo;
+let chartMode='pie';
+const money=(n,c='ARS')=>new Intl.NumberFormat('es-AR',{style:'currency',currency:c,maximumFractionDigits:c==='ARS'?0:2}).format(n);
+const monthKey=d=>d.slice(0,7);
+const thisMonth='2026-08';
+const prevMonth='2026-07';
+function save(){localStorage.setItem('misFinanzasExpenses',JSON.stringify(expenses));renderAll()}
+function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===id));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===id));window.scrollTo({top:0,behavior:'smooth'})}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>showView(b.dataset.view));
+function categoryFor(text){const t=text.toLowerCase();const rules=[
+ ['Servicios',['edes','luz','camuzzi','gas','agua','aysa','internet','fibertel','personal flow','movistar fibra']],
+ ['Comida',['carrefour','changomas','chango','coto','jumbo','supermercado','comida','carnicer','verduler','restaurante','cafe','café','pedidosya','rappi']],
+ ['Transporte',['shell','ypf','axion','nafta','combustible','uber','cabify','peaje','estacionamiento']],
+ ['Compras',['mercado libre','mercadolibre','amazon','ropa','zapatilla','tienda']],
+ ['Salud',['farmacia','medico','médico','odont','salud']],
+ ['Entretenimiento',['cine','entrada','juego','steam','playstation']],
+ ['Vivienda',['alquiler','expensas','mueble','hogar']],
+ ['Suscripciones',['netflix','spotify','disney','max','youtube','icloud','chatgpt','suscripcion','suscripción']]
+ ];
+ for(const [cat,words] of rules) if(words.some(w=>t.includes(w))) return cat; return 'Otros';
+}
+function totals(month,currency){return expenses.filter(e=>monthKey(e.date)===month&&e.currency===currency).reduce((s,e)=>s+Number(e.amount),0)}
+function catTotals(month,currency='ARS'){const o={};CATS.forEach(c=>o[c]=0);expenses.filter(e=>monthKey(e.date)===month&&e.currency===currency).forEach(e=>o[e.category]=(o[e.category]||0)+Number(e.amount));return o}
+function renderKpis(){const a=totals(thisMonth,'ARS'),u=totals(thisMonth,'USD'),pa=totals(prevMonth,'ARS'),pu=totals(prevMonth,'USD');
+ document.getElementById('kpiARS').textContent=money(a,'ARS'); document.getElementById('kpiUSD').textContent=money(u,'USD');
+ document.getElementById('kpiARSNote').textContent=pa?`${a>=pa?'↑':'↓'} ${Math.abs((a-pa)/pa*100).toFixed(1)}% vs mes anterior`:'Sin comparación';
+ document.getElementById('kpiUSDNote').textContent=pu?`${u>=pu?'↑':'↓'} ${Math.abs((u-pu)/pu*100).toFixed(1)}% vs mes anterior`:'Sin comparación';
+ const ct=catTotals(thisMonth,'ARS'),top=Object.entries(ct).sort((a,b)=>b[1]-a[1])[0];document.getElementById('kpiCat').textContent=top&&top[1]?top[0]:'—';document.getElementById('kpiCatNote').textContent=top&&top[1]?money(top[1]):'Sin datos';document.getElementById('kpiCount').textContent=expenses.filter(e=>monthKey(e.date)===thisMonth).length}
+function rowHTML(e){return `<div class="expense-row" data-id="${e.id}"><div><strong>${esc(e.description)}</strong><small>${new Date(e.date+'T12:00:00').toLocaleDateString('es-AR')} · ${esc(e.payment)}</small></div><div><span class="pill">${esc(e.category)}</span></div><div>${e.recurring==='si'?'<span class="pill">Recurrente</span>':''}</div><div class="amount">${money(Number(e.amount),e.currency)}</div><button class="btn danger del" data-del="${e.id}">Eliminar</button></div>`}
+function esc(s){return String(s)
