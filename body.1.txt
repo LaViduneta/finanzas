@@ -1,0 +1,76 @@
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <img class="login-logo" src="/favicon.png" onerror="this.style.display='none'" alt="">
+    <h2>Mis Finanzas</h2>
+    <p>Ingresá con tu cuenta principal de Google para acceder a tu panel privado y sincronizar tus datos.</p>
+    <button class="google-btn" id="googleLoginBtn"><span class="google-g">G</span> Continuar con Google</button>
+    <button class="demo-link" id="continueLocalBtn">Continuar en modo local</button>
+  </div>
+</div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><img src="/favicon.png" onerror="this.style.display='none'" alt=""><div><strong>Mis Finanzas</strong><span>Panel personal</span></div></div>
+    <nav>
+      <button class="active" data-view="home"><span class="nav-ico">⌂</span><span>Home</span></button>
+      <button data-view="finanzas"><span class="nav-ico">▦</span><span>Finanzas</span></button>
+      <button data-view="agregar"><span class="nav-ico">＋</span><span>Agregar gasto</span></button>
+      <button data-view="como"><span class="nav-ico">?</span><span>Cómo usar</span></button>
+      <button data-view="config"><span class="nav-ico">⚙</span><span>Configuración</span></button>
+    </nav>
+    <div class="sidebar-bottom"><div class="account-strip"><div class="account-left"><span class="account-dot" id="accountDot"></span><div><div class="account-email" id="accountEmail">Modo local</div><div class="account-meta" id="accountMeta">Datos en este navegador</div></div></div><button class="icon-account" id="accountBtn" title="Cuenta">›</button></div></div>
+  </aside>
+  <div class="workspace">
+    <header class="hero topbar">
+      <div><span class="eyebrow">DASHBOARD</span><h1>Mis Finanzas</h1><p>Controlá tus gastos, compará meses y mantené todo ordenado.</p></div>
+      <div class="top-actions"><span class="hero-badge">Panel personal</span><button class="btn primary quick-add" onclick="showView('agregar')">＋ Nuevo gasto</button></div>
+    </header>
+
+  <main>
+    <section id="home" class="view active">
+      <div class="grid kpis">
+        <div class="card"><div class="kpi-label">Gasto este mes · ARS</div><div class="kpi-value" id="kpiARS">$0</div><div class="kpi-note" id="kpiARSNote">—</div></div>
+        <div class="card"><div class="kpi-label">Gasto este mes · USD</div><div class="kpi-value" id="kpiUSD">US$ 0</div><div class="kpi-note" id="kpiUSDNote">—</div></div>
+        <div class="card"><div class="kpi-label">Mayor categoría</div><div class="kpi-value" id="kpiCat">—</div><div class="kpi-note" id="kpiCatNote">—</div></div>
+        <div class="card"><div class="kpi-label">Movimientos del mes</div><div class="kpi-value" id="kpiCount">0</div><div class="kpi-note">Gastos registrados</div></div>
+      </div>
+
+      <div class="grid two" style="margin-top:14px">
+        <div class="card">
+          <div class="section-title"><div><h2>Distribución de gastos</h2><p>Por categoría, mes actual.</p></div><div class="chart-controls"><button class="chip active" data-chart="pie">Pizza</button><button class="chip" data-chart="line">Líneas</button></div></div>
+          <div class="chart-box"><canvas id="mainChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="section-title"><div><h2>Análisis automático</h2><p>Lectura rápida sin usar una API de IA.</p></div></div>
+          <div class="insights" id="quickInsights"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div class="section-title"><div><h2>Últimos gastos</h2><p>Los movimientos más recientes.</p></div><button class="btn secondary" onclick="showView('finanzas')">Ver todos</button></div>
+        <div id="recentList" class="expense-list"></div>
+      </div>
+    </section>
+
+    <section id="finanzas" class="view">
+      <div class="section-title"><div><h2>Finanzas</h2><p>Detalle completo de tus gastos. Tocá un gasto para comparar esa categoría con el mes anterior.</p></div></div>
+      <div class="card">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+          <select id="filterCategory" style="max-width:220px"><option value="">Todas las categorías</option></select>
+          <select id="filterCurrency" style="max-width:180px"><option value="">ARS y USD</option><option>ARS</option><option>USD</option></select>
+          <button class="btn secondary" id="exportBtn">Exportar CSV</button>
+        </div>
+        <div id="fullList" class="expense-list"></div>
+      </div>
+    </section>
+
+    <section id="agregar" class="view">
+      <div class="section-title"><div><h2>Agregar gasto</h2><p>Cargá lo esencial. La categoría puede asignarse automáticamente por la descripción.</p></div></div>
+      <div class="card">
+        <form id="expenseForm">
+          <div class="field"><label>Monto</label><input id="amount" type="number" step="0.01" min="0" required placeholder="Ej: 24500"></div>
+          <div class="field"><label>Moneda</label><select id="currency"><option>ARS</option><option>USD</option></select></div>
+          <div class="field full"><label>Descripción</label><input id="description" required placeholder="Ej: Carrefour, EDES, nafta Shell..."><div class="hint" id="autoHint">Voy a intentar clasificarlo automáticamente.</div></div>
+          <div class="field"><label>Fecha</label><input id="date" type="date" required></div>
+          <div class="field"><label>Medio de pago</label><select id="payment"><option>Efectivo</option><option>Débito</option><option>Visa</option><option>Amex</option><option>Transferencia</option><option>Mercado Pago</option><option>Otro</option></select></div>
+          <div class="field"><label>Categoría</label><select id="category"><option value="AUTO">Automática</option><option>Servicios</option><option>Comida</option><option>Transporte</option><option>Compras</option><option>Salud</option><option>Entretenimiento</option><option>Vivienda</option><option>Suscripciones</option><option>Otros</option><
